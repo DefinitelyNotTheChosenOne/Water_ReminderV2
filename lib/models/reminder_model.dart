@@ -4,7 +4,6 @@ class WaterReminderModel {
   final DateTime? lastDrinkTime;
   final List<String> todayLogs;
   final List<String> completedDates;
-  final int availableRewardsCount;
   final String soundAsset;
   final DateTime? nextReminderTime;
 
@@ -14,7 +13,6 @@ class WaterReminderModel {
     this.lastDrinkTime,
     required this.todayLogs,
     this.completedDates = const [],
-    this.availableRewardsCount = 0,
     this.soundAsset = 'assets/sounds/drop.wav',
     this.nextReminderTime,
   });
@@ -32,7 +30,6 @@ class WaterReminderModel {
     DateTime? lastDrinkTime,
     List<String>? todayLogs,
     List<String>? completedDates,
-    int? availableRewardsCount,
     String? soundAsset,
     DateTime? nextReminderTime,
   }) {
@@ -42,7 +39,6 @@ class WaterReminderModel {
       lastDrinkTime: lastDrinkTime ?? this.lastDrinkTime,
       todayLogs: todayLogs ?? this.todayLogs,
       completedDates: completedDates ?? this.completedDates,
-      availableRewardsCount: availableRewardsCount ?? this.availableRewardsCount,
       soundAsset: soundAsset ?? this.soundAsset,
       nextReminderTime: nextReminderTime ?? this.nextReminderTime,
     );
@@ -55,7 +51,6 @@ class WaterReminderModel {
       'lastDrinkTime': lastDrinkTime?.toIso8601String(),
       'todayLogs': todayLogs,
       'completedDates': completedDates,
-      'availableRewardsCount': availableRewardsCount,
       'soundAsset': soundAsset,
       'nextReminderTime': nextReminderTime?.toIso8601String(),
     };
@@ -70,7 +65,6 @@ class WaterReminderModel {
           : null,
       todayLogs: List<String>.from(json['todayLogs'] ?? []),
       completedDates: List<String>.from(json['completedDates'] ?? []),
-      availableRewardsCount: json['availableRewardsCount'] ?? 0,
       soundAsset: json['soundAsset'] ?? 'assets/sounds/drop.wav',
       nextReminderTime: json['nextReminderTime'] != null
           ? DateTime.parse(json['nextReminderTime'])

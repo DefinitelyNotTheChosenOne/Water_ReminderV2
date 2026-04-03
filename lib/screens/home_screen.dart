@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:percent_indicator/percent_indicator.dart';
 import '../providers/reminder_provider.dart';
 import 'settings_screen.dart';
-import 'rewards_screen.dart';
 import 'history_screen.dart';
 import 'dart:ui';
 
@@ -29,6 +28,13 @@ class HomeScreen extends StatelessWidget {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.calendar_month_outlined, color: Colors.white70),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const HistoryScreen()),
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Colors.white70),
@@ -132,6 +138,7 @@ class HomeScreen extends StatelessWidget {
                   backgroundColor: Colors.white.withValues(alpha: 0.1),
                   circularStrokeCap: CircularStrokeCap.round,
                   animation: true,
+                  animateFromLastPercent: true,
                   animationDuration: 1200,
                   curve: Curves.easeOutCubic,
                 ),
@@ -302,31 +309,6 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 20),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildSecondaryButton(
-                  icon: Icons.calendar_month_rounded,
-                  label: "HISTORY",
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HistoryScreen())),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildSecondaryButton(
-                  icon: Icons.emoji_events_outlined,
-                  label: "REWARDS",
-                  color: Colors.amber,
-                  badge: provider.data.availableRewardsCount.toString(),
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsScreen())),
-                ),
-              ),
-            ],
-          ),
-        ),
         const SizedBox(height: 12),
         TextButton(
           onPressed: () => provider.toggleReminders(),
@@ -341,44 +323,4 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSecondaryButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    Color color = Colors.white70,
-    String? badge,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Badge(
-              isLabelVisible: badge != null && badge != "0",
-              label: Text(badge ?? ""),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
-                letterSpacing: 1,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

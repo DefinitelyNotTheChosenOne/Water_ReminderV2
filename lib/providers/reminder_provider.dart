@@ -17,7 +17,6 @@ class ReminderProvider with ChangeNotifier, WidgetsBindingObserver {
     dailyGoalMl: 2000,
     todayLogs: [],
     completedDates: [],
-    availableRewardsCount: 0,
     soundAsset: 'assets/sounds/drop.wav',
   );
 
@@ -155,10 +154,8 @@ class ReminderProvider with ChangeNotifier, WidgetsBindingObserver {
     if (_data.progress >= 1.0) {
       final logicalDateStr = _getLogicalDateString(DateTime.now());
       if (!_data.completedDates.contains(logicalDateStr)) {
-        // NEW SUCCESS DAY!
         _data = _data.copyWith(
           completedDates: [..._data.completedDates, logicalDateStr],
-          availableRewardsCount: _data.availableRewardsCount + 1,
         );
         _audio.playSound(_data.soundAsset);
       }
@@ -190,14 +187,12 @@ class ReminderProvider with ChangeNotifier, WidgetsBindingObserver {
     // Check old days for completion
     bool changed = false;
     List<String> newCompletedDates = List.from(_data.completedDates);
-    int newRewards = _data.availableRewardsCount;
     
     logsByDay.forEach((dayStr, logs) {
       // Calculate progress for that specific old day
       final totalMl = logs.length * 250; // assuming 250ml per log as per UI
       if (totalMl >= _data.dailyGoalMl && !newCompletedDates.contains(dayStr)) {
         newCompletedDates.add(dayStr);
-        newRewards++;
         changed = true;
       }
     });
@@ -206,19 +201,8 @@ class ReminderProvider with ChangeNotifier, WidgetsBindingObserver {
       _data = _data.copyWith(
         todayLogs: currentDayLogs,
         completedDates: newCompletedDates,
-        availableRewardsCount: newRewards,
       );
       _storage.saveReminderData(_data);
-    }
-  }
-
-  void redeemPicture() {
-    if (_data.availableRewardsCount > 0) {
-      _data = _data.copyWith(
-        availableRewardsCount: _data.availableRewardsCount - 1,
-      );
-      _storage.saveReminderData(_data);
-      notifyListeners();
     }
   }
 
