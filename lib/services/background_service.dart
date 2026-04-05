@@ -41,11 +41,11 @@ void onStart(ServiceInstance service) async {
     nextTime = null;
   });
 
-  late Timer timer;
+  Timer? timer;
   int tickCount = 0;
   
   service.on('stopService').listen((event) {
-    timer.cancel();
+    timer?.cancel();
     service.stopSelf();
   });
 

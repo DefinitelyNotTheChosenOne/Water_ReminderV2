@@ -4,6 +4,7 @@ class WaterReminderModel {
   final DateTime? lastDrinkTime;
   final List<String> todayLogs;
   final List<String> completedDates;
+  final Map<String, List<String>> historyLogs;
   final String soundAsset;
   final DateTime? nextReminderTime;
 
@@ -13,6 +14,7 @@ class WaterReminderModel {
     this.lastDrinkTime,
     required this.todayLogs,
     this.completedDates = const [],
+    this.historyLogs = const {},
     this.soundAsset = 'assets/sounds/drop.wav',
     this.nextReminderTime,
   });
@@ -30,6 +32,7 @@ class WaterReminderModel {
     DateTime? lastDrinkTime,
     List<String>? todayLogs,
     List<String>? completedDates,
+    Map<String, List<String>>? historyLogs,
     String? soundAsset,
     DateTime? nextReminderTime,
   }) {
@@ -39,6 +42,7 @@ class WaterReminderModel {
       lastDrinkTime: lastDrinkTime ?? this.lastDrinkTime,
       todayLogs: todayLogs ?? this.todayLogs,
       completedDates: completedDates ?? this.completedDates,
+      historyLogs: historyLogs ?? this.historyLogs,
       soundAsset: soundAsset ?? this.soundAsset,
       nextReminderTime: nextReminderTime ?? this.nextReminderTime,
     );
@@ -51,6 +55,7 @@ class WaterReminderModel {
       'lastDrinkTime': lastDrinkTime?.toIso8601String(),
       'todayLogs': todayLogs,
       'completedDates': completedDates,
+      'historyLogs': historyLogs,
       'soundAsset': soundAsset,
       'nextReminderTime': nextReminderTime?.toIso8601String(),
     };
@@ -65,6 +70,10 @@ class WaterReminderModel {
           : null,
       todayLogs: List<String>.from(json['todayLogs'] ?? []),
       completedDates: List<String>.from(json['completedDates'] ?? []),
+      historyLogs: (json['historyLogs'] as Map<String, dynamic>?)?.map(
+            (key, value) => MapEntry(key, List<String>.from(value)),
+          ) ??
+          {},
       soundAsset: json['soundAsset'] ?? 'assets/sounds/drop.wav',
       nextReminderTime: json['nextReminderTime'] != null
           ? DateTime.parse(json['nextReminderTime'])

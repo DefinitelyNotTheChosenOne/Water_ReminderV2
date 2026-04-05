@@ -6,20 +6,17 @@ import 'services/background_service.dart';
 import 'screens/home_screen.dart';
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Essential initializations before running the app
   try {
-    WidgetsFlutterBinding.ensureInitialized();
-    
-    // Non-blocking initializations to avoid Black Screen on slower devices
-    NotificationService().init();
-    initializeService();
-    
-    runApp(const WaterReminderApp());
-  } catch (e, stack) {
-    debugPrint('Critical Startup Error: $e');
-    debugPrint(stack.toString());
-    // Fallback to ensuring the app at least tries to render
-    runApp(const WaterReminderApp());
+    await NotificationService().init();
+    await initializeService();
+  } catch (e) {
+    debugPrint('Service Initialization Error: $e');
   }
+  
+  runApp(const WaterReminderApp());
 }
 
 class WaterReminderApp extends StatelessWidget {

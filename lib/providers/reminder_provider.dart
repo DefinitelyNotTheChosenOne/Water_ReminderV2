@@ -65,7 +65,6 @@ class ReminderProvider with ChangeNotifier, WidgetsBindingObserver {
           }
         }
       }
-      await _notification.init();
       notifyListeners();
     } catch (e) {
       debugPrint('Error during ReminderProvider._init: $e');
@@ -96,15 +95,23 @@ class ReminderProvider with ChangeNotifier, WidgetsBindingObserver {
     
     _startTimer();
     
-    // Always schedule system-level alarms & Background Engine
+    // 1. Request Notification Permission (Crucial for Android 13+)
+    await _notification.requestPermissions();
+    
+    // 2. Request Exact Alarm Permission (Android 12+)
     await _notification.requestExactAlarmsPermission();
     
+    // 3. Schedule the recurring system notification
     _notification.scheduleNotification(_data.intervalMinutes);
     
+    // 4. Start the background service for the live countdown
     final bgService = FlutterBackgroundService();
-    if (!(await bgService.isRunning())) {
+    bool isRunning = await bgService.isRunning();
+    
+    if (!isRunning) {
       await bgService.startService();
     }
+    
     bgService.invoke('setNextTime', {'time': nextTime.toIso8601String()});
     
     notifyListeners();
@@ -135,9 +142,21 @@ class ReminderProvider with ChangeNotifier, WidgetsBindingObserver {
     if (drank) {
       final now = DateTime.now();
       final nowIso = now.toIso8601String();
+      final logicalDateStr = _getLogicalDateString(now);
+      
+      // Update today's ephemeral logs
+      List<String> newTodayLogs = [..._data.todayLogs, nowIso];
+      
+      // Also update history map immediately for consistency
+      Map<String, List<String>> newHistory = Map.from(_data.historyLogs);
+      List<String> dayLogs = List.from(newHistory[logicalDateStr] ?? []);
+      dayLogs.add(nowIso);
+      newHistory[logicalDateStr] = dayLogs;
+
       _data = _data.copyWith(
         lastDrinkTime: now,
-        todayLogs: [..._data.todayLogs, nowIso],
+        todayLogs: newTodayLogs,
+        historyLogs: newHistory,
       );
       
       _checkGoalCompletion();
@@ -151,8 +170,11 @@ class ReminderProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   void _checkGoalCompletion() {
-    if (_data.progress >= 1.0) {
-      final logicalDateStr = _getLogicalDateString(DateTime.now());
+    final logicalDateStr = _getLogicalDateString(DateTime.now());
+    final dayLogs = _data.historyLogs[logicalDateStr] ?? [];
+    final currentIntake = dayLogs.length * 200;
+
+    if (currentIntake >= _data.dailyGoalMl) {
       if (!_data.completedDates.contains(logicalDateStr)) {
         _data = _data.copyWith(
           completedDates: [..._data.completedDates, logicalDateStr],
@@ -167,10 +189,11 @@ class ReminderProvider with ChangeNotifier, WidgetsBindingObserver {
     final now = DateTime.now();
     final currentLogicalDateStr = _getLogicalDateString(now);
     
-    // Group logs by their logical date
-    Map<String, List<String>> logsByDay = {};
+    Map<String, List<String>> newHistory = Map.from(_data.historyLogs);
     List<String> currentDayLogs = [];
-    
+    bool changed = false;
+
+    // First, ensure all logs in history are valid and todayLogs are synced
     for (var logIso in _data.todayLogs) {
       try {
         final logTime = DateTime.parse(logIso);
@@ -178,19 +201,22 @@ class ReminderProvider with ChangeNotifier, WidgetsBindingObserver {
         
         if (logDayStr == currentLogicalDateStr) {
           currentDayLogs.add(logIso);
-        } else {
-          logsByDay.putIfAbsent(logDayStr, () => []).add(logIso);
+        }
+        
+        // Ensure it's in history too
+        List<String> hLogs = List.from(newHistory[logDayStr] ?? []);
+        if (!hLogs.contains(logIso)) {
+          hLogs.add(logIso);
+          newHistory[logDayStr] = hLogs;
+          changed = true;
         }
       } catch (_) {}
     }
     
-    // Check old days for completion
-    bool changed = false;
+    // Check for goal completions in history that might have been missed
     List<String> newCompletedDates = List.from(_data.completedDates);
-    
-    logsByDay.forEach((dayStr, logs) {
-      // Calculate progress for that specific old day
-      final totalMl = logs.length * 250; // assuming 250ml per log as per UI
+    newHistory.forEach((dayStr, logs) {
+      final totalMl = logs.length * 200;
       if (totalMl >= _data.dailyGoalMl && !newCompletedDates.contains(dayStr)) {
         newCompletedDates.add(dayStr);
         changed = true;
@@ -200,10 +226,17 @@ class ReminderProvider with ChangeNotifier, WidgetsBindingObserver {
     if (changed || _data.todayLogs.length != currentDayLogs.length) {
       _data = _data.copyWith(
         todayLogs: currentDayLogs,
+        historyLogs: newHistory,
         completedDates: newCompletedDates,
       );
       _storage.saveReminderData(_data);
     }
+  }
+
+  int getIntakeForDate(DateTime date) {
+    final dateStr = _getLogicalDateString(date);
+    final logs = _data.historyLogs[dateStr] ?? [];
+    return logs.length * 200;
   }
 
   DateTime? _lastArchiveCheck;

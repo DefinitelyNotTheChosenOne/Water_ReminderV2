@@ -3,6 +3,10 @@ import 'package:flutter/foundation.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 
 class NotificationService {
+  static final NotificationService _instance = NotificationService._internal();
+  factory NotificationService() => _instance;
+  NotificationService._internal();
+
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
@@ -10,7 +14,11 @@ class NotificationService {
   static const String channelName = 'Water Reminders';
   static const String channelDesc = 'Notifications to drink water';
 
+  bool _isInitialized = false;
+
   Future<void> init() async {
+    if (_isInitialized) return;
+    
     tz.initializeTimeZones();
     
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -37,25 +45,32 @@ class NotificationService {
       },
     );
 
-    // Request permissions for Android 13+
+    // Create the silent background channel
     final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
         _notificationsPlugin.resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
 
-    await androidImplementation?.requestNotificationsPermission();
-
-    // Create the silent background channel
     const AndroidNotificationChannel bgChannel = AndroidNotificationChannel(
       'water_reminder_bg_channel',
       'Background Timer',
       description: 'Used for silent countdown tracking',
-      importance: Importance.low, // SILENT BUT VISIBLE
+      importance: Importance.low, 
       enableVibration: false,
       playSound: false,
       showBadge: false,
     );
 
     await androidImplementation?.createNotificationChannel(bgChannel);
+    _isInitialized = true;
+  }
+
+  Future<bool> requestPermissions() async {
+    final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+        _notificationsPlugin.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    
+    final bool? granted = await androidImplementation?.requestNotificationsPermission();
+    return granted ?? false;
   }
 
   Future<void> requestExactAlarmsPermission() async {
